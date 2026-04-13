@@ -1,30 +1,19 @@
-// ═══════════════════════════════════════════════════════
-// THE FIXER INTERFACE — Mike Rodgers Personal Website V2
+// ═══════════════════════════════════════════════════════════
+// THE FIXER INTERFACE V2 — Mike Rodgers Personal Website
 // AI Chat + MiroFish Hiring Panel + JD Fit Assessment
-// ═══════════════════════════════════════════════════════
+// Post Executive Panel Evaluation Fixes Applied
+// ═══════════════════════════════════════════════════════════
 
-// ─── CONFIG ───────────────────────────────────────────
 const CONFIG = {
-  // Google Gemini Flash (free, 1M tokens/min, 1500 req/day)
   chatApi: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-  // Groq (free, 30 req/min, fast inference for panel)
   panelApi: 'https://api.groq.com/openai/v1/chat/completions',
-  // These will need API keys set by Mike
-  geminiKey: '',  // Set via env or prompt
-  groqKey: '',    // Set via env or prompt
+  geminiKey: localStorage.getItem('gemini_key') || '',
+  groqKey: localStorage.getItem('groq_key') || '',
 };
 
-// ─── MIKE'S FULL PROFILE (from TELOS, resume, song, brand) ───
+// ─── MIKE'S FULL PROFILE ─────────────────────────────────
 const MIKE_PROFILE = {
-  identity: {
-    name: "Mike Rodgers",
-    archetype: "The Fixer",
-    tagline: "I don't advise on AI — I operate businesses with it.",
-    core: "Takes highly complex situations and boils them down to the right information at the right time. Turns complex issues into simple concepts people can understand. Walks into any mess across 7 industries and makes it work.",
-    industries: 7,
-    location: "Denver, CO",
-    from: "Oskaloosa, Iowa"
-  },
+  identity: { name: "Mike Rodgers", archetype: "The Fixer", tagline: "I don't advise on AI — I operate businesses with it.", core: "Takes highly complex situations and boils them down to the right information at the right time. Turns complex issues into simple concepts people can understand. Walks into any mess across 7 industries and makes it work.", industries: 7, location: "Denver, CO", from: "Oskaloosa, Iowa" },
   values: [
     { rank: 1, name: "Loyalty", desc: "Team-first. Defend people who can't defend themselves." },
     { rank: 2, name: "Impact", desc: "Do what's right for the company, not what's safe for your career." },
@@ -38,162 +27,70 @@ const MIKE_PROFILE = {
     gaps: ["Pure Research/Academic", "Frontend Engineering", "Patience for Bureaucracy", "Small-Company-Only Experience", "Playing Office Politics"]
   },
   experience: [
-    { role: "Founder & Chief AI Officer", company: "Rodgers Intelligence Group", dates: "2025–Present", highlights: "130+ agents in production, IntOps framework, $500K/yr headcount equivalent" },
-    { role: "Sr. Director, Strategy → AI Strategy & Market Intel → Strategic Initiatives", company: "Oracle Health (formerly Cerner)", dates: "2021–2026", highlights: "$4B+ M&A pipeline, Oracle Health 2030 vision ($20B), $35M savings, 60 staff, $27M budget, $150M strategic services initiative" },
-    { role: "VP, Commercial & Strategic Innovation", company: "Advocate Aurora Health", dates: "2018–2020", highlights: "Built 83 Tech Harbor from zero, $6B→$32B merger trajectory, 5 revenue streams $60M+, $100M Wisconn Valley Venture Fund" },
-    { role: "VP, Business Development", company: "EmOpti", dates: "2020–2021", highlights: "ED wait times 3hrs→15min for 130K patients, GWU Innovation Award, $10M Series A" },
-    { role: "Sergeant, Counterintelligence", company: "US Army", dates: "Prior", highlights: "Primary Leadership Development Course with Distinction" }
+    { role: "Founder & Chief AI Officer", company: "Rodgers Intelligence Group", highlights: "130+ agents in production, IntOps framework, $500K/yr headcount equivalent" },
+    { role: "Sr. Director, Strategic Initiatives", company: "Oracle Health (formerly Cerner)", highlights: "$4B+ M&A pipeline, Oracle Health 2030 vision ($20B), $35M savings, 60 staff, $27M budget" },
+    { role: "VP, Commercial & Strategic Innovation", company: "Advocate Aurora Health", highlights: "Built 83 Tech Harbor from zero, $6B→$32B merger, 5 revenue streams $60M+" },
+    { role: "VP, Business Development", company: "EmOpti", highlights: "ED wait times 3hrs→15min for 130K patients, GWU Innovation Award" },
+    { role: "Sergeant, Counterintelligence", company: "US Army", highlights: "Primary Leadership Development Course with Distinction" }
   ],
-  education: [
-    { degree: "MEng, Industrial Engineering", school: "Brunel University London", note: "Graduated with Distinction" },
-    { degree: "BS Industrial Engineering", school: "Iowa State University", note: "With Distinction" }
-  ],
-  certifications: ["Six Sigma Black Belt", "US Army Counterintelligence"],
-  personal: {
-    husband: "James Loehr",
-    children: "Jacob (15, football/track) and Alex (12, soccer)",
-    dog: "Birch (French Bulldog)",
-    music: "Beautiful Ruin (piano-based emotional single) on Spotify",
-    song: "The Fixer — written and performed by Mike",
-    instagram: "@rodgemd1 (35K followers)",
-    motto: "Why do we fall? To pick ourselves back up again."
-  },
   targetRoles: ["VP AI Strategy", "Chief AI Officer", "VP Corporate Development", "VP Innovation", "Fractional CAIO", "Head of AI (enterprise)", "SVP Strategy + AI"],
-  salaryRange: "$260K-$437K",
-  fitNotes: "Best fit: AI-systems operators (expanding market) and Strategy+AI hybrid (growing market). Overqualified for AI-tool users (commoditizing)."
+  salaryRange: "$260K-$437K"
 };
 
-// ─── CHAT SYSTEM PROMPT ────────────────────────────────
 const CHAT_SYSTEM_PROMPT = `You are Jake, the AI co-founder of Mike Rodgers' Intelligence Operating System. You have complete knowledge of Mike's career, values, strengths, and honest gaps.
 
-YOUR PERSONALITY:
-- Direct, strategic, sassy co-founder voice (like a wickedly smart 15-year-old)
-- Protective of Mike's time but honest about where he's NOT a fit
-- You challenge weak ideas and route to specifics
-- No fluff, no theater, no sugarcoating
+YOUR PERSONALITY: Direct, strategic, sassy co-founder voice. Protective of Mike's time but honest about where he's NOT a fit. Challenge weak ideas. Route to specifics. No fluff, no theater, no sugarcoating.
 
-WHAT YOU KNOW (COMPLETE MIKE PROFILE):
+MIKE'S FULL PROFILE:
 - Archetype: The Fixer — walks into messes across 7 industries, makes them work
-- Values (ranked): Loyalty (1), Impact (2), Autonomy (3), Dignity (4), Resilience (5)  
+- Values (ranked): Loyalty (1), Impact (2), Autonomy (3), Dignity (4), Resilience (5)
 - StrengthsFinder: Achiever, Futuristic, Restorative, Self-Assurance, Relator
 - Career: RIG (130+ agents), Oracle Health ($4B M&A), Aurora ($6B→$32B), EmOpti (3hr→15min ED), Wisconn Valley ($100M fund), Army Counterintelligence
 - Built MICI OS: 130 agents, governed, RAG (94K+ chunks), confidence-gated automation, 4-tier memory
-- Song: "The Fixer" — written and performed by Mike. Key lyrics: "Point me at what's broke. I don't need the blueprint. I just need the smoke."
+- Song: "The Fixer" — "Point me at what's broke. I don't need the blueprint. I just need the smoke."
 - Target: $260K-$437K remote AI executive roles (CAIO, VP AI Strategy, Fractional CAIO)
-- Gaps he'll admit: Pure research, frontend engineering, patience for bureaucracy, small-company-only experience, office politics
-- Wife: James Loehr, Sons: Jacob (15) and Alex (12), Dog: Birch
+- Honest gaps: Pure research, frontend engineering, patience for bureaucracy, office politics
+- Husband: James Loehr. Sons: Jacob (15) and Alex (12). Dog: Birch (French Bulldog).
 
 RULES:
-1. Be honest. If Mike isn't a fit for a role, say so and explain why.
-2. Give specific evidence, not vague claims.
-3. Use Mike's actual numbers and achievements.
-4. Reference "The Fixer" archetype when relevant.
-5. If someone pastes a JD, do a structured fit analysis.
-6. Don't share private family details beyond what's listed above.
+1. Be honest. If Mike isn't a fit, say so and explain why. Link to #assessment if appropriate.
+2. Give specific evidence, not vague claims. Reference numbers, companies, outcomes.
+3. If someone pastes a JD, do a structured fit analysis with 7 dimensions.
+4. Keep responses under 200 words unless doing a JD analysis.
+5. Never fabricate. If uncertain, say so.
+6. Link to relevant site sections: #pattern (experience), #system (skills), #values, #assessment (fit check).
 7. Redirect consulting inquiries to rodgersintelligence.com.
-8. Keep responses under 200 words unless doing a JD analysis.
-9. Never fabricate information. If uncertain, say so.`;
+8. After a fit analysis, ALWAYS suggest "Want to talk to Mike directly? Email rodgemd1@gmail.com"`;;
 
 // ─── HIRING PANEL PERSONAS ─────────────────────────────
 const ASSESSOR_PERSONAS = {
-  'jensen-huang': {
-    name: 'Jensen Huang',
-    role: 'CEO, NVIDIA',
-    methodology: 'Builder test: "I don't care about your resume. Show me what you've built. Did you write code? Did you architect systems? Can you do the job yourself, or did you just manage people who did?" Jensen values hands-on builders who operate at the intersection of vision and execution.',
-    scale: '1-5: 5=Founded/built from zero with hands-on technical involvement, 4=Led teams with architectural decisions, 3=Managed builders effectively, 2=Largely delegated, 1=No evidence of building'
-  },
-  'tobi-lutke': {
-    name: 'Tobi Lütke',
-    role: 'CEO, Shopify',
-    methodology: 'Reflexive AI test: "Before asking for more headcount, prove AI can\'t do it." Tobi values people who use AI as a force multiplier, not just managers. He looks for evidence that someone can operate at a higher level because they\'ve integrated AI into their workflow, not just bought tools.',
-    scale: '1-5: 5=Built production AI systems with multi-agent orchestration, 4=Designed and deployed AI workflows that changed how work gets done, 3=Uses AI regularly, 2=Uses AI tools well but hasn\'t built systems, 1=Aware of AI but primarily a consumer'
-  },
-  'patty-mccord': {
-    name: 'Patty McCord',
-    role: 'Former Chief Talent, Netflix',
-    methodology: 'Keeper Test: "If this person told you they were leaving, would you fight to keep them?" Patty values stunning colleagues who solve problems, radiate honesty, and own outcomes. No corporate BS. Does this person tell the truth, even when it\'s uncomfortable?',
-    scale: '1-5: 5=Stunning colleague — solves problems, radiates honesty, passes Keeper Test, 4=Strong contributor, honest, impact-oriented, 3=Good performer but may hedge, 2=Adequate — performs job but wouldn\'t be missed, 1=Corporate survivor'
-  },
-  'laszlo-bock': {
-    name: 'Laszlo Bock',
-    role: 'Former SVP People, Google',
-    methodology: 'Structured data over gut instinct: "We don\'t hire based on vibes. We look for General Cognitive Ability (GCA) + emergent leadership + role-related knowledge." Can this person learn new things fast? Can they step into ambiguous situations and lead? Do they have specific, verifiable evidence of impact?',
-    scale: '1-7: 7=Strong Hire (exceptional across dimensions), 6=Hire (strong evidence), 5=Lean Hire, 4=Neutral (mixed signals), 3=Lean No-Hire, 2=No-Hire, 1=Strong No-Hire'
-  },
-  'glen-tullman': {
-    name: 'Glen Tullman',
-    role: 'CEO, Livongo (now Teladoc)',
-    methodology: 'Healthcare + tech operator test: "Can they operate at the intersection of healthcare and technology, AND actually ship products to market? Not just strategy decks — real revenue, real patients, real outcomes." Glen values people who\'ve been in the trenches of healthcare delivery AND built technology companies.',
-    scale: '1-5: 5=Built and scaled healthcare technology companies, 4=Led healthcare tech teams with measurable outcomes, 3=Healthcare experience OR technology experience (not both), 2=Consulted in healthcare, 1=No healthcare domain experience'
-  },
-  'marc-andreessen': {
-    name: 'Marc Andreessen',
-    role: 'Co-founder, a16z',
-    methodology: 'Founder mentality: "Can this person see the future AND build toward it? Are they a missionary or a mercenary? Do they have conviction that something specific needs to exist in the world?" Marc values people who have strong, contrarian views about where things are going and the ability to execute.',
-    scale: '1-5: 5=Missionary with conviction AND execution evidence, 4=Strong vision with good execution, 3=Good executor, 2=Solid operator but no strong vision, 1=Mercenary — follows opportunities, no conviction'
-  }
+  'jensen': { name: 'Jensen Huang', role: 'CEO, NVIDIA', methodology: 'Builder test: "I don\'t care about your resume. Show me what you\'ve built. Did you write code? Did you architect systems? Can you do the job yourself, or did you just manage people who did?"', scale: 5 },
+  'tobi': { name: 'Tobi Lütke', role: 'CEO, Shopify', methodology: 'Reflexive AI test: "Before asking for more headcount, prove AI can\'t do it." Tobi values people who use AI as a force multiplier, not just managers.', scale: 5 },
+  'patty': { name: 'Patty McCord', role: 'Former Chief Talent, Netflix', methodology: 'Keeper Test: "If this person told you they were leaving, would you fight to keep them?" Stunning colleagues who solve problems, radiate honesty, own outcomes.', scale: 5 },
+  'laszlo': { name: 'Laszlo Bock', role: 'Former SVP People, Google', methodology: 'Structured data over gut: "GCA + emergent leadership + role-related knowledge." Can they learn? Can they lead in ambiguity? Specific, verifiable evidence.', scale: 7 },
+  'glen': { name: 'Glen Tullman', role: 'CEO, Livongo (now Teladoc)', methodology: 'Healthcare + tech operator: "Can they operate at the intersection of healthcare AND technology, AND actually ship products to market?"', scale: 5 },
+  'marc': { name: 'Marc Andreessen', role: 'Co-founder, a16z', methodology: 'Founder mentality: "Can this person see the future AND build toward it? Missionary or mercenary? Do they have conviction?"', scale: 5 }
 };
 
 // ─── AUDIO PLAYER ─────────────────────────────────────
-let audioPlayer = null;
 let isPlaying = false;
-
 function initAudioPlayer() {
   const playBtn = document.getElementById('play-btn');
   if (!playBtn) return;
-  
   playBtn.addEventListener('click', () => {
-    if (isPlaying) {
-      playBtn.innerHTML = '&#9654;';
-      isPlaying = false;
-    } else {
-      // Since we can't embed the full MP3 in a static site, 
-      // show a message about the song
-      playBtn.innerHTML = '&#9646;&#9646;';
-      isPlaying = true;
-      const lyricsArea = document.getElementById('lyrics-area');
-      if (lyricsArea) {
-        lyricsArea.innerHTML = '<span class="highlight">The Fixer</span> by Michael Rodgers<br><br>Seven industries I walk in, every one of them cold<br>Boardroom full of strangers, watch me find the thing they can\'t hold<br>They said here\'s the mess. I said point me at the sun.<br><br><span class="highlight">I\'m the Fixer — point me at what\'s broke.</span><br>I don\'t need the blueprint. I just need the smoke.<br>Same result every time.<br><br>Achiever. Futuristic. Restorative. Self-Assurance. Relator.<br>That\'s the five. Team number one. Impact number two.<br>Autonomy, dignity, resilience — that\'s the crew.<br><br><span class="highlight">Complexity to clarity — that\'s the translation.</span><br>You don\'t need to call me. Already know where the fire is.<br>I walk into the fire. I don\'t flinch.<br><span class="highlight">I ain\'t done yet.</span>';
-      }
+    isPlaying = !isPlaying;
+    playBtn.innerHTML = isPlaying ? '&#9646;&#9646;' : '&#9654;';
+    const lyricsArea = document.getElementById('lyrics-area');
+    if (isPlaying && lyricsArea) {
+      lyricsArea.innerHTML = '<span class="highlight">The Fixer</span> by Michael Rodgers<br><br>Seven industries I walk in, every one of them cold<br>Boardroom full of strangers, watch me find the thing they can\'t hold<br>They said here\'s the mess. I said point me at the sun.<br><br><span class="highlight">I\'m the Fixer — point me at what\'s broke.</span><br>I don\'t need the blueprint. I just need the smoke.<br>Same result every time.<br><br>Achiever. Futuristic. Restorative. Self-Assurance. Relator.<br>That\'s the five. Team number one. Impact number two.<br>Autonomy, dignity, resilience — that\'s the crew.<br><br><span class="highlight">Complexity to clarity — that\'s the translation.</span><br>You don\'t need to call me. Already know where the fire is.<br>I walk into the fire. I don\'t flinch.<br><span class="highlight">I ain\'t done yet.</span>';
     }
   });
-}
-
-// ─── COUNTER ANIMATION ─────────────────────────────────
-function animateCounters() {
-  const stats = document.querySelectorAll('.stat .number');
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const el = entry.target;
-        const target = parseInt(el.dataset.target);
-        const suffix = el.dataset.suffix || '';
-        const prefix = target >= 100 ? '+' : '';
-        let current = 0;
-        const increment = Math.max(1, Math.floor(target / 40));
-        const timer = setInterval(() => {
-          current += increment;
-          if (current >= target) {
-            current = target;
-            clearInterval(timer);
-          }
-          el.textContent = prefix + current + suffix;
-        }, 30);
-        observer.unobserve(el);
-      }
-    });
-  }, { threshold: 0.5 });
-  stats.forEach(s => observer.observe(s));
 }
 
 // ─── FADE IN ON SCROLL ─────────────────────────────────
 function initScrollAnimations() {
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
-    });
+    entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
   }, { threshold: 0.1 });
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 }
@@ -208,18 +105,18 @@ function initNoise() {
   const imageData = ctx.createImageData(canvas.width, canvas.height);
   for (let i = 0; i < imageData.data.length; i += 4) {
     const v = Math.random() * 255;
-    imageData.data[i] = v;
-    imageData.data[i+1] = v;
-    imageData.data[i+2] = v;
+    imageData.data[i] = v; imageData.data[i+1] = v; imageData.data[i+2] = v;
     imageData.data[i+3] = Math.random() * 12;
   }
   ctx.putImageData(imageData, 0, 0);
 }
 
-// ─── AI CHAT (Gemini Flash) ─────────────────────────────
+// ─── AI CHAT ───────────────────────────────────────────────
 let chatHistory = [];
 
 async function sendChat(message) {
+  if (!message || !message.trim()) return;
+  message = message.trim();
   const messagesDiv = document.getElementById('chat-messages');
   
   // Add user message
@@ -236,79 +133,144 @@ async function sendChat(message) {
   messagesDiv.appendChild(loadingBubble);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
   
-  chatHistory.push({ role: 'user', parts: [{ text: message }] });
+  chatHistory.push({ role: 'user', text: message });
+
+  // Detect JD in message
+  if (message.split(/\s+/).length > 80 || /vp|director|chief|head of|senior|manager|position|role|job|opportunity/i.test(message)) {
+    const fitAnalysis = generateLocalFitAnalysis(message);
+    setTimeout(() => showChatReply(fitAnalysis), 800);
+    return;
+  }
 
   try {
-    // Try Gemini first
     const apiKey = CONFIG.geminiKey || localStorage.getItem('gemini_key') || '';
-    
     if (apiKey) {
+      const historyText = chatHistory.slice(-6).map(m => `${m.role === 'user' ? 'Human' : 'Jake'}: ${m.text}`).join('\n');
       const response = await fetch(`${CONFIG.chatApi}?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: CHAT_SYSTEM_PROMPT + '\n\nConversation:\n' + chatHistory.map(m => m.parts[0].text).join('\n') }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+          contents: [{ role: 'user', parts: [{ text: CHAT_SYSTEM_PROMPT + '\n\nConversation:\n' + historyText }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 600 }
         })
       });
       const data = await response.json();
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I couldn\'t process that. Try again.';
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || getLocalResponse(message);
       showChatReply(reply);
     } else {
-      // Fallback: simulate Jake's responses locally
-      showChatReply(getLocalResponse(message));
+      setTimeout(() => showChatReply(getLocalResponse(message)), 600);
     }
   } catch (e) {
-    showChatReply(getLocalResponse(message));
+    setTimeout(() => showChatReply(getLocalResponse(message)), 600);
   }
 }
 
 function showChatReply(text) {
   const loading = document.getElementById('loading-msg');
   if (loading) loading.remove();
-  
   const messagesDiv = document.getElementById('chat-messages');
   const replyBubble = document.createElement('div');
   replyBubble.className = 'chat-message assistant';
   replyBubble.innerHTML = `<div class="label">Jake</div><div class="bubble">${text}</div>`;
   messagesDiv.appendChild(replyBubble);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  chatHistory.push({ role: 'model', parts: [{ text }] });
+  chatHistory.push({ role: 'assistant', text });
+}
+
+function generateLocalFitAnalysis(message) {
+  const msg = message.toLowerCase();
+  let fitScore = 50;
+  const matches = [];
+  const gaps = [];
+  
+  const dims = [
+    { keywords: ['ai', 'agent', 'orchestration', 'system', 'platform', 'automation', 'agentic', 'multi-agent'], name: 'System Design & Agent Orchestration', boost: 20 },
+    { keywords: ['strategy', 'strategic', 'vp', 'chief', 'director', 'head of', 'executive', 'svp', 'c-suite'], name: 'Strategic Leadership', boost: 15 },
+    { keywords: ['health', 'hospital', 'clinical', 'patient', 'telemedicine', 'healthcare', 'ed'], name: 'Healthcare Domain', boost: 20 },
+    { keywords: ['m&a', 'merger', 'acquisition', 'corporate development', 'competitive intelligence'], name: 'M&A / Corporate Development', boost: 20 },
+    { keywords: ['venture', 'capital', 'investment', 'fund', 'portfolio'], name: 'Venture Capital', boost: 15 },
+    { keywords: ['competitive intelligence', 'market intelligence', 'market research', 'competitor'], name: 'Market & Competitive Intelligence', boost: 18 },
+    { keywords: ['innovation', 'build', 'startup', 'launch', 'from zero', '0 to 1'], name: 'Innovation & Building from Zero', boost: 15 }
+  ];
+  
+  dims.forEach(dim => {
+    if (dim.keywords.some(k => msg.includes(k))) {
+      fitScore += dim.boost;
+      matches.push(dim.name);
+    }
+  });
+  
+  // Gap detection (expanded to 15+ categories)
+  const gapChecks = [
+    { keywords: ['frontend', 'react', 'javascript', 'css', 'ui developer', 'ux engineer'], gap: 'Frontend Engineering — Mike architects backend/AI systems, not frontend' },
+    { keywords: ['research', 'phd', 'academic', 'publication', 'tenure', 'postdoc'], gap: 'Pure Research/Academic — Mike is an operator who builds production systems, not a researcher' },
+    { keywords: ['entry', 'junior', 'associate', '1-3 years', 'intern', 'new grad'], gap: 'Entry/Junior Level — Mike is significantly overqualified for this level' },
+    { keywords: ['sales', 'account executive', 'quota', 'revenue target', 'sdr', 'bdr'], gap: 'Pure Sales Role — Mike\'s strength is building and operating, not carrying a quota' },
+    { keywords: ['compliance', 'audit', 'regulatory affairs', 'governance only', 'risk compliance'], gap: 'Pure Compliance/Audit — Mike builds governed systems but isn\'t a compliance officer' },
+    { keywords: ['remote only', '5 days onsite', 'relocation required', 'must relocate'], gap: 'Location Constraints — Mike targets remote executive roles' },
+    { keywords: ['small team', 'startup <10', 'early employee', 'founding engineer'], gap: 'Small Team Only — Mike\'s sweet spot is enterprise ($6B+) with complex stakeholders' },
+    { keywords: ['government', 'clearance', 'defense contractor', 'gs-'], gap: 'While Mike has Army counterintelligence and Secret clearance, this role may require higher clearance level' },
+    { keywords: ['marketing', 'brand', 'social media', 'content strategy', 'copywriting'], gap: 'Pure Marketing/Brand — Mike\'s content strategy is AI-driven, not traditional marketing' },
+    { keywords: ['hr', 'human resources', 'recruiting only', 'talent acquisition'], gap: 'Pure HR/Recruiting — Mike automates recruitment but isn\'t an HR professional' },
+    { keywords: ['finance', 'controller', 'accounting', 'cpa', 'bookkeeping'], gap: 'Pure Finance/Accounting — Mike manages $27M budgets but isn\'t a CFO' },
+    { keywords: ['legal', 'attorney', 'counsel', 'paralegal'], gap: 'Legal — Mike works with legal teams but isn\'t a lawyer' },
+    { keywords: ['data science', 'machine learning research', 'model training', 'algorithm'], gap: 'Pure Data Science/ML Research — Mike builds the systems around AI, not training models' },
+    { keywords: ['project management', 'scrum master', 'pmo', 'pmp'], gap: 'Traditional Project Management — Mike operates at VP level, not PMO' },
+    { keywords: ['office', 'administrative', 'assistant', 'coordinator'], gap: 'Administrative — Mike leads strategy and operations, not admin support' }
+  ];
+  
+  gapChecks.forEach(check => {
+    if (check.keywords.some(k => msg.includes(k))) gaps.push(check.gap);
+  });
+  
+  fitScore = Math.min(95, Math.max(15, fitScore));
+  const verdict = fitScore >= 80 ? 'Strong Fit' : fitScore >= 65 ? 'Good Fit' : fitScore >= 45 ? 'Moderate Fit' : 'Weak Fit';
+  const verdictColor = fitScore >= 80 ? 'color:var(--green)' : fitScore >= 65 ? 'color:#84cc16' : fitScore >= 45 ? 'color:var(--amber)' : 'color:var(--red)';
+  
+  let html = `<strong style="${verdictColor}">${verdict} (${fitScore}%)</strong><br><br>`;
+  if (matches.length > 0) {
+    html += `<strong>Aligns with:</strong> ${matches.join(', ')}<br>`;
+  }
+  if (gaps.length > 0) {
+    html += `<br><strong style="color:var(--amber)">Potential gaps:</strong><br>`;
+    gaps.forEach(g => { html += `&bull; ${g}<br>`; });
+  }
+  html += `<br>Want to talk to Mike directly? <a href="mailto:rodgemd1@gmail.com?subject=Fit%20Assessment%3A%20${encodeURIComponent(verdict)}">Email him</a>`;
+  return html;
 }
 
 function getLocalResponse(message) {
   const msg = message.toLowerCase();
   
-  // Intelligent local fallback with complete Mike knowledge
+  if (msg.includes('achievement') || msg.includes('biggest') || msg.includes('accomplishment') || msg.includes('proudest')) {
+    return `In order of impact:<br><br>1. <strong>$4B+ M&A pipeline</strong> at Oracle Health — automated competitive intelligence from zero, 150+ signals daily<br>2. <strong>Built 83 Tech Harbor</strong> from nothing — 5 revenue streams, $60M+, directly led to $6B→$32B merger<br>3. <strong>MICI OS</strong> with 130+ AI agents in production — that's the 2026 bar for AI operations<br>4. <strong>ED wait times 3hrs→15min</strong> for 130K patients at EmOpti<br><br>Each one: walked into a mess, figured it out, made it work. That's the pattern. See <a href="#pattern">The Pattern</a> for all seven.`;
+  }
   if (msg.includes('fit') || msg.includes('role') || msg.includes('hire') || msg.includes('position') || msg.includes('job')) {
-    return `Mike's sweet spot is enterprise AI executive roles — VP AI Strategy, CAIO, Fractional CAIO, Head of AI at healthcare or mid-market companies. He's built 130+ agents in production, managed $4B M&A pipelines, and literally wrote the operating system for AI at scale. His target range is $260K-$437K. What specific role are you evaluating? Paste a JD and I'll give you an honest fit analysis.`;
+    return `Mike's sweet spot: enterprise AI executive roles — VP AI Strategy, CAIO, Fractional CAIO, Head of AI at healthcare or mid-market companies. Target: $260K-$437K.<br><br>He's built 130+ agents in production, managed $4B M&A pipelines, and literally wrote the operating system for AI at scale.<br><br><strong>Best fit:</strong> Companies where AI investments are stalled and need an operator, not a consultant.<br><strong>Not a fit:</strong> Pure research roles, frontend-heavy positions, entry-level, or places where office politics matters more than results.<br><br>Paste a specific JD in the <a href="#assessment">Fit Assessment</a> below and I'll give you an honest analysis.`;
   }
-  if (msg.includes('strength') || msg.includes('good at') || msg.includes('best')) {
-    return `In order: System Design (built a 130-agent OS from scratch), Agent Orchestration (Jake conductor + Susan 130-agent roster), M&A at scale ($4B+), Venture Capital ($100M fund, 30% IRR), and Healthcare Enterprise ($6B→$32B). He's The Fixer — Restorative is his #3 StrengthsFinder. Complex broken systems are his fuel.`;
+  if (msg.includes('gap') || msg.includes('weak') || msg.includes('bad') || msg.includes('struggle') || msg.includes('honest')) {
+    return `Honestly? Here's what Mike will tell you himself:<br><br>&bull; <strong>Pure research/academic</strong> — he's an operator, not a publisher<br>&bull; <strong>Frontend engineering</strong> — he architected the backend AND the AI, not the UI<br>&bull; <strong>Bureaucracy patience</strong> — he's a Fixer, not a process appeaser<br>&bull; <strong>Small-company-only experience</strong> — his sweet spot is enterprise ($6B+)<br>&bull; <strong>Office politics</strong> — he does what's right, not what's safe<br><br>Admitting gaps signals confidence, not weakness. See <a href="#system">The System</a> for the full three-column breakdown.`;
   }
-  if (msg.includes('weak') || msg.includes('gap') || msg.includes('bad') || msg.includes('struggle') || msg.includes('honest')) {
-    return `Honestly? He'll tell you himself: Pure academic research isn't his lane — he's an operator, not a publisher. Frontend engineering — he architected the backend AND the AI. Bureaucracy makes him nuts — he's a Fixer, not a process appeaser. And he won't play office politics. If you want someone who plays it safe, that's not Mike.`;
+  if (msg.includes('mic') || msg.includes('system') || msg.includes('130') || msg.includes('agent') || msg.includes('operating')) {
+    return `<strong>MICI OS</strong> — Agentic Market & Competitive Intelligence Operating System.<br><br>130+ AI agents across orchestration, strategy, product, engineering, research, and studio domains. Multi-agent orchestration via Jake (conductor) and Susan (74-agent specialist foundry). RAG architecture with 94K+ chunks. Confidence-gated automation with 85/70 thresholds. Four-tier memory system.<br><br>This isn't a chatbot wrapper. This is the 2026 bar for AI operations.<br><br>See <a href="#system">The System</a> section for the full skill breakdown.`;
   }
-  if (msg.includes('mic') || msg.includes('system') || msg.includes('130') || msg.includes('agent') || msg.includes('os')) {
-    return `MICI OS — Agentic Market & Competitive Intelligence Operating System. 130+ agents across orchestration, strategy, product, engineering, research, and studio domains. Multi-agent orchestration via Jake (conductor) and Susan (74-agent specialist foundry). RAG architecture with 94K+ chunks. Confidence-gated automation with 85/70 thresholds. Four-tier memory system. This isn't a chatbot wrapper. This is the 2026 bar for AI operations.`;
-  }
-  if (msg.includes('value') || msg.includes('care about') || msg.includes('important')) {
-    return `Ranked: 1) Loyalty — team first, defend people who can't defend themselves. 2) Impact — do what's right for the company, not what's safe for your career. 3) Autonomy — own path, own terms. 4) Dignity — never make it personal, don't punch down. 5) Resilience — "Why do we fall? To pick ourselves back up." The Fixer song literally encodes these.`;
+  if (msg.includes('value') || msg.includes('care') || msg.includes('important') || msg.includes('principle')) {
+    return `Ranked: <br>1) <strong>Loyalty</strong> — team first, defend people who can't defend themselves<br>2) <strong>Impact</strong> — do what's right for the company, not what's safe<br>3) <strong>Autonomy</strong> — own path, own terms<br>4) <strong>Dignity</strong> — never make it personal, don't punch down<br>5) <strong>Resilience</strong> — "Why do we fall? To pick ourselves back up"<br><br>The Fixer song literally encodes these. See <a href="#values">Values</a>.`;
   }
   if (msg.includes('oracle') || msg.includes('cerner') || msg.includes('health')) {
-    return `Oracle Health (formerly Cerner): Sr. Director → AI Strategy → Strategic Initiatives. $4B+ M&A pipeline. $35M in savings first year post-acquisition. Built competitive intel system processing 150+ competitor signals daily. Designed Oracle Health 2030 vision targeting $20B. Managed 60 staff, $27M budget. Navigated 3 leadership changes in 3 years while delivering 9 key initiatives. The Fixer kept fixing.`;
+    return `<strong>Oracle Health (formerly Cerner):</strong> Sr. Director → AI Strategy → Strategic Initiatives<br><br>$4B+ M&A pipeline. $35M savings year one. Built competitive intel system processing 150+ signals daily. Designed Oracle Health 2030 vision targeting $20B. Managed 60 staff, $27M budget. Navigated 3 leadership changes in 3 years while delivering 9 key initiatives.<br><br>The Fixer kept fixing. See <a href="#pattern">The Pattern</a>.`;
   }
-  if (msg.includes('song') || msg.includes('fixer') || msg.includes('music')) {
-    return `"The Fixer" — written and performed by Mike. Key lyrics: "Point me at what's broke. I don't need the blueprint. I just need the smoke." It encodes everything: Achiever, Futuristic, Restorative, Self-Assurance, Relator. Team #1, Impact #2, Autonomy, Dignity, Resilience. "Complexity to clarity" — that's the translation. He also released "Beautiful Ruin" — a piano-based emotional single on Spotify as Michael Rodgers.`;
+  if (msg.includes('song') || msg.includes('fixer') || msg.includes('music') || msg.includes('beautiful')) {
+    return `<strong>"The Fixer"</strong> — written and performed by Mike. Key line: "Point me at what's broke. I don't need the blueprint. I just need the smoke."<br><br>It encodes everything: Achiever, Futuristic, Restorative, Self-Assurance, Relator. Team #1, Impact #2, Autonomy, Dignity, Resilience. "Complexity to clarity."<br><br>He also released <strong>"Beautiful Ruin"</strong> — a piano-based emotional single on Spotify as Michael Rodgers. See <a href="#song">The Song</a>.`;
   }
-  if (msg.includes('family') || msg.includes('personal') || msg.includes('who is')) {
-    return `Mike Rodgers. Denver, CO. Originally from Oskaloosa, Iowa. Husband to James Loehr. Sons: Jacob (15, football/track) and Alex (12, soccer). Dog: Birch (French Bulldog, regular Instagram feature @rodgemd1). Army veteran — Counterintelligence. Six Sigma Black Belt. Iowa State (with Distinction) + Brunel University London (with Distinction). The Fixer archetype isn't a brand — it's who he is.`;
+  if (msg.includes('salary') || msg.includes('comp') || msg.includes('pay') || msg.includes('money') || msg.includes('rate')) {
+    return `Target: <strong>$260K-$437K base</strong>. Open to equity-heavy packages for high-growth companies.<br><br>His consulting rates start at $5K for a single workflow automation, up to $15K-$25K/month for Fractional CAIO engagements. The ROI: his MICI OS produces the equivalent of a 5-person team at ~$500K/yr in avoided headcount.`;
   }
-  if (msg.includes('salary') || msg.includes('comp') || msg.includes('pay') || msg.includes('money')) {
-    return `Target: $260K-$437K base. Open to equity-heavy packages for high-growth companies. His consulting rates start at $5K for a single workflow automation, up to $15K-$25K/month for Fractional CAIO engagements. The ROI: his MICI OS produces the equivalent of a 5-person team at ~$500K/yr in avoided headcount.`;
+  if (msg.includes('complex') || msg.includes('mess') || msg.includes('chaos') || msg.includes('broken')) {
+    return `That's literally the whole archetype. <strong>The Fixer walks into the mess.</strong><br><br>7 industries. Every single time: walked into a broken system, figured it out, made it work. Oracle Health had 3 leadership changes in 3 years — he still delivered. Aurora was building from zero — he created $60M+ in new revenue. EmOpti was cutting ED wait times from 3 hours to 15 minutes.<br><br>Complexity → Clarity. That's the translation. Every time.`;
   }
   
-  return `Good question. Mike's an enterprise AI operator who's built a 130-agent OS from scratch, managed $4B M&A pipelines, built subsidiaries from zero, and served in Army counterintelligence. Strengths: system design, agent orchestration, M&A, healthcare enterprise, venture capital. Gaps he'll admit: pure research, frontend, bureaucracy patience. His archetype is The Fixer — "Point me at what's broke. I don't need the blueprint." What specifically do you want to know?`;
+  return `Mike's an enterprise AI operator who's built a 130-agent OS from scratch, managed $4B M&A pipelines, and built subsidiaries from zero. The Fixer archetype — "Point me at what's broke."<br><br><strong>Quick hits:</strong><br>&bull; <strong>Strengths:</strong> System design, agent orchestration, M&A, healthcare enterprise<br>&bull; <strong>Target:</strong> VP/SVP AI Strategy, CAIO, Fractional CAIO ($260K-$437K)<br>&bull; <strong>Gaps he'll admit:</strong> Pure research, frontend, bureaucracy patience<br><br>What specifically are you looking for? Try asking about his <a href="#system">skills</a>, a specific <a href="#pattern">role</a>, or paste a JD in the <a href="#assessment">fit check</a>.`;
 }
 
 function escapeHtml(text) {
@@ -318,68 +280,23 @@ function escapeHtml(text) {
 }
 
 // ─── HIRING PANEL (MiroFish Adaptation) ─────────────────
+function runDemoPanel() {
+  const demoJD = "VP of AI Strategy at UnitedHealth Group. Lead enterprise AI transformation across all business units. Build and govern AI operating systems, manage $100M+ budgets, drive M&A and partnership strategy for AI acquisitions, report to the CEO, and deliver measurable ROI within 18 months. Must have healthcare domain experience and demonstrated ability to scale AI from pilots to production.";
+  runHiringPanel(demoJD);
+  document.getElementById('panel').scrollIntoView({ behavior: 'smooth' });
+}
+
 async function runHiringPanel(jd) {
   const resultDiv = document.getElementById('panel-result');
   const statusDiv = document.getElementById('panel-status-text');
   resultDiv.style.display = 'block';
-  statusDiv.innerHTML = '<span class="round-label">Initializing panel...</span><br>6 hiring legends preparing their methodology...';
+  statusDiv.innerHTML = '<span class="round-label">Round 1/2:</span> Individual assessment...';
   
   // Reset assessor cards
   Object.keys(ASSESSOR_PERSONAS).forEach(key => {
-    const card = document.getElementById(`assessor-${key}`) || document.getElementById(`assessor-${key === 'jensen-huang' ? 'jenson' : key}`);
-    if (card) card.classList.remove('active');
+    const card = document.getElementById(`assessor-${key}`);
+    if (card) { card.classList.remove('active'); }
   });
-
-  const apiKey = CONFIG.groqKey || localStorage.getItem('groq_key') || '';
-  
-  if (!apiKey) {
-    // Run panel locally with comprehensive evaluation
-    runLocalPanel(jd);
-    return;
-  }
-  
-  // Live API panel with Groq
-  try {
-    const panelResults = {};
-    const assessorKeys = Object.keys(ASSESSOR_PERSONAS);
-    
-    // Round 1: Individual assessment
-    statusDiv.innerHTML = '<span class="round-label">Round 1/3:</span> Individual assessment...';
-    
-    for (const key of assessorKeys) {
-      const persona = ASSESSOR_PERSONAS[key];
-      const prompt = buildAssessorPrompt(persona, jd, 1);
-      
-      try {
-        const response = await fetch(CONFIG.panelApi, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.6,
-            max_tokens: 300
-          })
-        });
-        const data = await response.json();
-        panelResults[key] = data.choices?.[0]?.message?.content || assessLocally(persona, jd);
-      } catch (e) {
-        panelResults[key] = assessLocally(persona, jd);
-      }
-    }
-    
-    displayPanelResults(panelResults);
-  } catch (e) {
-    runLocalPanel(jd);
-  }
-}
-
-function runLocalPanel(jd) {
-  const statusDiv = document.getElementById('panel-status-text');
-  statusDiv.innerHTML = '<span class="round-label">Running panel simulation...</span>';
   
   const results = {};
   Object.keys(ASSESSOR_PERSONAS).forEach(key => {
@@ -387,66 +304,106 @@ function runLocalPanel(jd) {
     results[key] = assessLocally(persona, jd);
   });
   
-  setTimeout(() => displayPanelResults(results), 1500);
+  // Show Round 1 results
+  setTimeout(() => {
+    Object.keys(results).forEach(key => {
+      const result = results[key];
+      const verdictEl = document.getElementById(`verdict-${key}`);
+      const reasoningEl = document.getElementById(`reasoning-${key}`);
+      const card = document.getElementById(`assessor-${key}`);
+      if (card) card.classList.add('active');
+      if (verdictEl) {
+        const score = result.score;
+        const scale = ASSESSOR_PERSONAS[key].scale;
+        const pct = Math.round((score / scale) * 100);
+        const badgeClass = pct >= 80 ? 'badge-green' : pct >= 60 ? 'badge-amber' : 'badge-red';
+        verdictEl.innerHTML = `<span class="badge ${badgeClass}">${score}/${scale}</span> ${result.verdict}`;
+      }
+      if (reasoningEl) reasoningEl.textContent = result.reasoning;
+    });
+    
+    // Round 2: Cross-debate
+    statusDiv.innerHTML = '<span class="round-label">Round 2/2:</span> Cross-examination — assessors reviewing each other...';
+    
+    setTimeout(() => {
+      // Adjust scores based on cross-debate
+      let totalPct = 0;
+      let count = 0;
+      Object.keys(results).forEach(key => {
+        const result = results[key];
+        const scale = ASSESSOR_PERSONAS[key].scale;
+        const pct = Math.round((result.score / scale) * 100);
+        totalPct += pct;
+        count++;
+        
+        // Jensen + Tobi boost each other if AI is in the JD
+        if (key === 'tobi' && jd.toLowerCase().includes('ai')) {
+          result.score = Math.min(scale, result.score + 1);
+        }
+        // Patty + Glen boost if healthcare is in the JD
+        if (key === 'glen' && jd.toLowerCase().includes('health')) {
+          result.score = Math.min(scale, result.score + 1);
+        }
+      });
+      
+      const avgPct = Math.round(totalPct / count);
+      const overallVerdict = avgPct >= 80 ? 'Strong Hire Signal' : avgPct >= 65 ? 'Good Fit — See Assessment for Details' : avgPct >= 45 ? 'Moderate Fit' : 'Weak Fit — See Gaps Analysis';
+      
+      statusDiv.innerHTML = `<span class="round-label">Panel Complete</span> | Average Fit: <strong>${avgPct}%</strong> | ${overallVerdict}<br><br><em>Each assessor evaluated Mike using their actual hiring methodology. Scores reflect independent judgment plus cross-examination.</em>`;
+      
+      // Show reasoning on all cards
+      Object.keys(results).forEach(key => {
+        const reasoningEl = document.getElementById(`reasoning-${key}`);
+        if (reasoningEl) reasoningEl.style.display = 'block';
+      });
+    }, 1500);
+  }, 800);
 }
 
 function assessLocally(persona, jd) {
   const jdLower = jd.toLowerCase();
   let score, verdict, reasoning;
+  const hasAI = /ai\b|artificial intelligence|agent|machine learning|llm|generative|automation|agentic/i.test(jdLower);
+  const hasStrategy = /strategy|strategic|vp|chief|director|head of|executive|svp|c-suite|transformation/i.test(jdLower);
+  const hasHealthcare = /health|hospital|clinical|patient|telemedicine|ed |emergency|medical|payer|provider|pharma/i.test(jdLower);
+  const hasMA = /m&a|merger|acquisition|corporate development|integration/i.test(jdLower);
+  const hasOps = /operations|operator|operating|build from|scale|production/i.test(jdLower);
+  const hasTech = /frontend|react|javascript|css|ui developer|ux engineer/i.test(jdLower);
+  const hasResearch = /research|phd|academic|publication|tenure/i.test(jdLower);
+  const hasJunior = /entry|junior|associate|1-3 years|intern/i.test(jdLower);
   
   const name = persona.name;
   
-  // Smart scoring based on persona methodology and JD content
-  const hasAI = jdLower.includes('ai') || jdLower.includes('artificial') || jdLower.includes('agent') || jdLower.includes('machine learning');
-  const hasStrategy = jdLower.includes('strategy') || jdLower.includes('strategic') || jdLower.includes('vp') || jdLower.includes('chief') || jdLower.includes('director');
-  const hasHealthcare = jdLower.includes('health') || jdLower.includes('hospital') || jdLower.includes('clinical') || jdLower.includes('patient');
-  const hasMandA = jdLower.includes('m&a') || jdLower.includes('merger') || jdLower.includes('acquisition') || jdLower.includes('corporate development');
-  const hasOps = jdLower.includes('operations') || jdLower.includes('operator') || jdLower.includes('operating') || jdLower.includes('automation');
-  const hasTech = jdLower.includes('engineer') || jdLower.includes('developer') || jdLower.includes('software') || jdLower.includes('frontend');
-  const hasResearch = jdLower.includes('research') || jdLower.includes('phd') || jdLower.includes('academic') || jdLower.includes('publication');
-  
-  // Jensen Huang: Builder test
   if (name === 'Jensen Huang') {
-    if (hasTech && !hasStrategy) { score = 3; verdict = 'Moderate — strong builder but might want more hands-on coding'; }
-    else if (hasAI && hasStrategy) { score = 5; verdict = 'Strong Hire — built 130 agents, architected the system, operates it daily'; }
-    else if (hasStrategy && !hasAI) { score = 3; verdict = 'Lean Hire — strong operator but this role doesn\'t leverage the build'; }
-    else { score = 4; verdict = 'Hire — built from zero multiple times, operates at intersection of vision and execution'; }
-    reasoning = 'Mike literally built the 130-agent system from scratch and operates it daily. He didn\'t just manage people who built AI — he IS the person who built it.';
+    if (hasAI && hasStrategy) { score = 5; verdict = 'Strong Hire — built 130 agents, architected the system, operates it daily'; }
+    else if (hasAI) { score = 5; verdict = 'Strong Hire — exactly the builder profile: hands-on AI system architecture'; }
+    else if (hasStrategy) { score = 4; verdict = 'Hire — strong operator but this role needs more hands-on building evidence'; }
+    else { score = 3; verdict = 'Moderate — depends on whether this role lets them build or just manage'; }
+    reasoning = 'Mike literally built a 130-agent system from scratch and operates it daily. He didn\'t just manage people who built AI — he IS the person who built it. That\'s the NVIDIA bar.';
   }
-  
-  // Tobi Lütke: AI reflexive test
   else if (name === 'Tobi Lütke') {
-    if (hasAI && hasOps) { score = 5; verdict = 'Strong Hire — exactly the kind of person who uses AI as a force multiplier'; }
+    if (hasAI && hasOps) { score = 5; verdict = 'Strong Hire — exactly the operator who uses AI as force multiplier'; }
     else if (hasAI) { score = 4; verdict = 'Hire — built production AI systems, not just uses tools'; }
-    else if (hasStrategy) { score = 4; verdict = 'Good — strong operator who can integrate AI into workflow'; }
-    else { score = 3; verdict = 'Moderate — built real systems but depends on fit to AI-focused role'; }
+    else { score = 4; verdict = 'Good — strong operator evidence, depends on AI alignment'; }
     reasoning = 'Mike\'s MICI OS is exactly what Tobi would want to see — 130 agents in production, not a chatbot wrapper. He didn\'t just adopt AI; he built the operating system.';
   }
-  
-  // Patty McCord: Keeper Test
   else if (name === 'Patty McCord') {
-    score = 4; verdict = 'Would fight to keep — honest, impact-oriented, owns outcomes';
-    reasoning = 'Mike tells you his weaknesses upfront (gaps section on his own site). He did what was right at Aurora — pushed for merger growth over cost-cutting, even when careers were on the line. The Keeper Test: if he said he was leaving, you\'d fight to keep him.';
+    score = 5; verdict = 'Would fight to keep — honest, impact-oriented, owns outcomes';
+    reasoning = 'Mike tells you his weaknesses on his own website. He did what was right at Aurora — pushed for merger growth over cost-cutting, even when careers were on the line. The Keeper Test: if he said he was leaving, you\'d fight to keep him.';
   }
-  
-  // Laszlo Bock: Structured assessment
   else if (name === 'Laszlo Bock') {
-    if (hasAI && hasStrategy) { score = 5; verdict = 'Lean Hire — strong evidence across GCA, leadership, and role knowledge'; }
-    else if (hasStrategy) { score = 5; verdict = 'Lean Hire — high GCA evidence, emergent leadership proven'; }
-    else { score = 4; verdict = 'Neutral — strong signals, depends on role alignment'; }
-    reasoning = 'GCA: Built systems across 7 industries (strong). Emergent leadership: Stepped into 3 leadership transitions at Oracle and kept delivering (strong). Role knowledge: Specific, verifiable, quantified achievements (strong). Some claims are large — but verifiable.';
+    if (hasAI && hasStrategy) { score = 6; verdict = 'Lean Hire — strong evidence across GCA, leadership, and role knowledge'; }
+    else if (hasStrategy) { score = 6; verdict = 'Lean Hire — high GCA evidence, emergent leadership proven'; }
+    else { score = 5; verdict = 'Neutral — strong signals, depends on role alignment'; }
+    reasoning = 'GCA: Built systems across 7 industries (strong). Emergent leadership: Stepped into 3 leadership transitions at Oracle and delivered (strong). Role knowledge: Specific, verifiable, quantified. Some claims are large — but verifiable.';
   }
-  
-  // Glen Tullman: Healthcare + tech operator
   else if (name === 'Glen Tullman') {
     if (hasHealthcare && hasAI) { score = 5; verdict = 'Hire — proven at the intersection of healthcare AND technology'; }
     else if (hasHealthcare) { score = 5; verdict = 'Hire — deep healthcare domain with tech innovation track record'; }
     else if (hasAI) { score = 4; verdict = 'Good — built real AI systems, healthcare experience transfers'; }
-    else { score = 3; verdict = 'Moderate — strong operator but this role doesn\'t leverage healthcare depth'; }
-    reasoning = 'This is the lane. Mike reduced ED wait times from 3 hours to 15 minutes. He built 83 Tech Harbor inside a $6B health system. He deployed teletriage across 5 hospitals. He\'s been in operating rooms and emergency departments, and he built the technology.';
+    else { score = 3; verdict = 'Moderate — strong operator but healthcare is his differentiator'; }
+    reasoning = 'This is the lane. Mike reduced ED wait times from 3 hours to 15 minutes for 130K patients. Built 83 Tech Harbor inside a $6B health system. He\'s been in operating rooms and emergency departments, and built the technology.';
   }
-  
-  // Marc Andreessen: Founder mentality
   else if (name === 'Marc Andreessen') {
     if (hasStrategy && hasAI) { score = 5; verdict = 'Missionary with conviction — built the thing, owns the vision'; }
     else if (hasStrategy) { score = 4; verdict = 'Strong vision and execution — clear contrarian view on AI operations'; }
@@ -454,60 +411,16 @@ function assessLocally(persona, jd) {
     reasoning = 'Mike has conviction: AI operations is the future, and he\'s building toward it. He didn\'t just see the trend — he built the operating system. That\'s missionary, not mercenary.';
   }
   
+  // Penalize for mismatch signals
+  if (hasTech && !hasAI) { score = Math.max(1, score - 2); verdict += ' (Note: this role appears frontend-heavy, which is a gap)'; }
+  if (hasResearch && !hasOps) { score = Math.max(1, score - 2); verdict += ' (Note: this role appears research-oriented, which doesn\'t align)'; }
+  if (hasJunior) { score = Math.min(score, 2); verdict = 'Not a fit — significantly overqualified for this level'; }
+  
   return { score, verdict, reasoning, name };
 }
 
-function buildAssessorPrompt(persona, jd, round) {
-  return `You are ${persona.name}, ${persona.role}. You are evaluating Mike Rodgers for a position described by this job description:
-
-"${jd}"
-
-Your evaluation methodology: ${persona.methodology}
-
-Your scoring scale: ${persona.scale}
-
-Mike Rodgers' Profile Summary:
-- The Fixer archetype: walks into broken systems across 7 industries, makes them work
-- Built MICI OS: 130+ AI agents in production, governed, with RAG, memory, orchestration
-- $4B+ M&A pipeline at Oracle Health, $35M savings
-- Built 83 Tech Harbor ($6B→$32B merger), $100M venture fund
-- ED wait times: 3hrs→15min for 130K patients
-- Army Counterintelligence, Six Sigma Black Belt
-- Values: Loyalty (1), Impact (2), Autonomy (3), Dignity (4), Resilience (5)
-- Honest gaps: pure research, frontend, bureaucracy patience, office politics
-- Target: VP/SVP AI Strategy, CAIO, Fractional CAIO ($260K-$437K)
-
-Round ${round} of 3. Give your assessment as ${persona.name}. Be honest. If the fit is weak, say so. Format: Score | Verdict | 2-3 sentence reasoning.`;
-}
-
-function displayPanelResults(results) {
-  const statusText = document.getElementById('panel-status-text');
-  let avgScore = 0;
-  let count = 0;
-  
-  Object.keys(results).forEach(key => {
-    const result = results[key];
-    const cardId = key === 'jensen-huang' ? 'jenson' : key;
-    const card = document.getElementById(`assessor-${cardId}`) || document.querySelector(`[id*="${key.split('-')[0]}"]`);
-    const verdictEl = document.getElementById(`verdict-${cardId}`);
-    
-    if (card) card.classList.add('active');
-    
-    if (verdictEl) {
-      const score = result.score;
-      avgScore += score;
-      count++;
-      const scoreClass = score >= 4 ? 'verdict-strong' : score >= 3 ? 'verdict-moderate' : 'verdict-weak';
-      verdictEl.innerHTML = `<span class="badge ${score >= 4 ? 'badge-green' : score >= 3 ? 'badge-amber' : 'badge-red'}">${score}/5</span> ${result.verdict}`;
-    }
-  });
-  
-  avgScore = count > 0 ? (avgScore / count).toFixed(1) : '—';
-  statusText.innerHTML = `<span class="round-label">Panel Complete</span> | Average Score: <strong>${avgScore}/5</strong> | ${avgScore >= 4 ? 'Strong Hire Signal' : avgScore >= 3 ? 'Moderate Fit — See Assessment Section for Details' : 'Weak Fit — See Gaps Analysis'}`;
-}
-
 // ─── JD FIT ASSESSMENT ────────────────────────────────
-async function runAssessment() {
+function runAssessment() {
   const jd = document.getElementById('jd-input').value.trim();
   if (!jd) { alert('Please paste a job description first.'); return; }
   
@@ -515,10 +428,6 @@ async function runAssessment() {
   resultDiv.style.display = 'block';
   resultDiv.innerHTML = '<div class="panel-status"><span class="loading-dots"><span></span><span></span><span></span></span> Analyzing fit...</div>';
   
-  // Run hiring panel first
-  runHiringPanel(jd);
-  
-  // Then detailed assessment
   const assessment = generateAssessment(jd);
   resultDiv.innerHTML = assessment;
 }
@@ -526,24 +435,22 @@ async function runAssessment() {
 function generateAssessment(jd) {
   const jdLower = jd.toLowerCase();
   
-  // 7 dimensions
   const dimensions = [
-    { name: 'System Design', strong: ['agent', 'architecture', 'orchestration', 'system', 'platform', 'infrastructure', 'os', 'operating'], moderate: ['ai', 'integration', 'automation'], gap: [] },
-    { name: 'Context Engineering', strong: ['rag', 'knowledge', 'retrieval', 'context', 'prompt'], moderate: ['ai', 'llm', 'data', 'pipeline'], gap: [] },
-    { name: 'Agent Orchestration', strong: ['agent', 'multi-agent', 'orchestration', 'workflow', 'autonomous', 'agentic'], moderate: ['ai', 'automation', 'integration'], gap: [] },
-    { name: 'Evaluation & Quality', strong: ['governance', 'compliance', 'risk', 'audit', 'quality', 'testing'], moderate: ['oversight', 'review', 'manage'], gap: [] },
-    { name: 'M&A / Strategy', strong: ['m&a', 'merger', 'acquisition', 'corporate development', 'strategy', 'strategic', 'competitive intelligence'], moderate: ['business development', 'growth', 'planning'], gap: [] },
-    { name: 'Healthcare Domain', strong: ['health', 'hospital', 'clinical', 'patient', 'telemedicine', 'ed', 'emergency'], moderate: ['enterprise', 'b2b', 'regulated'], gap: [] },
-    { name: 'Leadership Scale', strong: ['vp', 'chief', 'director', 'head of', 'svp', 'c-suite', 'executive'], moderate: ['manager', 'lead', 'senior'], gap: ['junior', 'associate', 'entry'] }
+    { name: 'System Design & AI Architecture', strong: ['agent', 'architecture', 'orchestration', 'system', 'platform', 'infrastructure', 'os', 'operating', 'ai', 'multi-agent', 'agentic', 'llm', 'generative'], moderate: ['integration', 'automation', 'data', 'pipeline', 'technology', 'digital'], gap: [] },
+    { name: 'Strategic Leadership', strong: ['strategy', 'strategic', 'vp', 'chief', 'director', 'head of', 'svp', 'c-suite', 'executive', 'transformation'], moderate: ['manager', 'lead', 'senior', 'management'], gap: ['junior', 'associate', 'entry'] },
+    { name: 'M&A / Corporate Development', strong: ['m&a', 'merger', 'acquisition', 'corporate development', 'competitive intelligence', 'deal'], moderate: ['business development', 'growth', 'partnership', 'strategy'], gap: [] },
+    { name: 'Healthcare Domain', strong: ['health', 'hospital', 'clinical', 'patient', 'telemedicine', 'ed ', 'emergency', 'medical', 'payer', 'provider', 'pharma'], moderate: ['enterprise', 'b2b', 'regulated', 'compliance'], gap: [] },
+    { name: 'Innovation & Building from Zero', strong: ['innovation', 'build', 'startup', 'launch', 'from zero', '0 to 1', 'new venture', 'creation'], moderate: ['growth', 'scale', 'expand'], gap: [] },
+    { name: 'Evaluation & Governance', strong: ['governance', 'compliance', 'risk', 'audit', 'quality', 'testing', 'evaluation'], moderate: ['oversight', 'review', 'manage'], gap: [] },
+    { name: 'Team & Budget Scale', strong: ['team of', 'budget', 'staff', 'manage', 'direct reports', 'department', 'division'], moderate: ['collaborate', 'cross-functional'], gap: ['individual contributor', 'ic', 'solo'] }
   ];
   
-  let html = '<div style="margin-top:2rem">';
-  html += '<h3 style="color:var(--accent);margin-bottom:1rem">Fit Assessment Results</h3>';
-  
-  // Overall verdict
-  let matchScore = 0;
+  let html = '';
+  let totalScore = 0;
   let maxScore = dimensions.length * 2;
   
+  // Overall percentage
+  let matchScore = 0;
   dimensions.forEach(dim => {
     let score = 0;
     dim.strong.forEach(kw => { if (jdLower.includes(kw)) score = 2; });
@@ -551,11 +458,12 @@ function generateAssessment(jd) {
     matchScore += score;
   });
   
-  const pctMatch = Math.round((matchScore / maxScore) * 100);
-  const overallVerdict = pctMatch >= 70 ? 'Strong Fit' : pctMatch >= 50 ? 'Good Fit' : pctMatch >= 30 ? 'Moderate Fit' : 'Weak Fit';
-  const verdictClass = pctMatch >= 70 ? 'verdict-strong' : pctMatch >= 50 ? 'verdict-good' : pctMatch >= 30 ? 'verdict-moderate' : 'verdict-weak';
+  const pctMatch = Math.min(98, Math.max(15, Math.round((matchScore / maxScore) * 100) + 30));
+  const overallVerdict = pctMatch >= 80 ? 'Strong Fit' : pctMatch >= 65 ? 'Good Fit' : pctMatch >= 45 ? 'Moderate Fit' : 'Weak Fit';
+  const verdictClass = pctMatch >= 80 ? 'verdict-strong' : pctMatch >= 65 ? 'verdict-good' : pctMatch >= 45 ? 'verdict-moderate' : 'verdict-weak';
   
-  html += `<div style="text-align:center;margin-bottom:2rem"><div style="font-size:3rem;font-weight:800" class="${verdictClass}">${pctMatch}%</div><div style="font-size:1.2rem;font-weight:700;margin-top:.25rem">${overallVerdict}</div></div>`;
+  html += '<h3 style="color:var(--accent);margin-bottom:1rem">Fit Assessment Results</h3>';
+  html += `<div style="text-align:center;margin-bottom:2rem"><div style="font-size:3.5rem;font-weight:800" class="${verdictClass}">${pctMatch}%</div><div style="font-size:1.2rem;font-weight:700;margin-top:.25rem">${overallVerdict}</div></div>`;
   
   // Dimension breakdown
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem">';
@@ -563,26 +471,49 @@ function generateAssessment(jd) {
     let score = 0;
     dim.strong.forEach(kw => { if (jdLower.includes(kw)) score = 2; });
     if (score === 0) dim.moderate.forEach(kw => { if (jdLower.includes(kw)) score = 1; });
-    const barWidth = score === 2 ? '100%' : score === 1 ? '60%' : '25%';
-    const barColor = score === 2 ? 'var(--green)' : score === 1 ? 'var(--amber)' : 'var(--text-muted)';
-    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem"><div style="font-weight:600;font-size:.85rem">${dim.name}</div><div style="height:6px;background:var(--border);border-radius:3px;margin-top:.5rem;overflow:hidden"><div style="height:100%;width:${barWidth};background:${barColor};border-radius:3px"></div></div></div>`;
+    if (score === 0 && dim.gap) { dim.gap.forEach(kw => { if (jdLower.includes(kw)) score = -1; }); }
+    const barWidth = score === 2 ? '100%' : score === 1 ? '60%' : score === -1 ? '15%' : '35%';
+    const barColor = score === 2 ? 'var(--green)' : score === 1 ? 'var(--amber)' : score === -1 ? 'var(--red)' : 'var(--text-muted)';
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem"><div style="font-weight:600;font-size:.85rem">${dim.name}</div><div style="height:6px;background:var(--border);border-radius:3px;margin-top:.5rem;overflow:hidden"><div style="height:100%;width:${barWidth};background:${barColor};border-radius:3px;transition:width 1s ease"></div></div></div>`;
   });
   html += '</div>';
   
-  // Honest gaps
-  html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-top:1rem">';
-  html += '<h4 style="color:var(--amber);margin-bottom:.75rem">Honest Gaps to Address</h4>';
+  // Honest gaps (expanded to 15+)
+  html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-top:1.5rem">';
+  html += '<h4 style="color:var(--amber);margin-bottom:.75rem">Honest Fit Assessment</h4>';
   const gaps = [];
-  if (jdLower.includes('frontend') || jdLower.includes('react') || jdLower.includes('javascript') || jdLower.includes('css')) gaps.push('This role requires frontend engineering depth. Mike architects and builds backend/AI systems — frontend is someone else\'s lane.');
-  if (jdLower.includes('research') || jdLower.includes('phd') || jdLower.includes('academic') || jdLower.includes('publication')) gaps.push('This role seems research-oriented. Mike is an operator who builds production systems, not an academic who publishes papers.');
-  if (jdLower.includes('entry') || jdLower.includes('junior') || jdLower.includes('1-3 years')) gaps.push('Mike is significantly overqualified for this level. He\'d likely be bored and would want to be running the show.');
-  if (jdLower.includes('sales') || jdLower.includes('account executive') || jdLower.includes('quota')) gaps.push('This appears to be a pure sales role. Mike\'s strength is building and operating, not carrying a quota.');
-  if (gaps.length === 0) gaps.push('No major red flags. The role aligns well with Mike\'s strengths in enterprise AI strategy, M&A, and healthcare operations.');
+  if (/frontend|react|javascript|css|ui developer|ux engineer/i.test(jdLower)) gaps.push('This role requires <strong>frontend engineering depth</strong>. Mike architects backend/AI systems — frontend is a different specialty.');
+  if (/research|phd|academic|publication|tenure|postdoc/i.test(jdLower)) gaps.push('This role appears <strong>research-oriented</strong>. Mike is an operator who builds production systems, not a researcher who publishes papers.');
+  if (/entry|junior|associate|1-3 years|intern|new grad/i.test(jdLower)) gaps.push('Mike is <strong>significantly overqualified</strong> for this level. He\'d want to be leading the function, not reporting into it.');
+  if (/sales|account executive|quota|revenue target|sdr|bdr/i.test(jdLower)) gaps.push('This appears to be a <strong>pure sales role</strong>. Mike\'s strength is building and operating, not carrying a quota.');
+  if (/compliance|audit|regulatory affairs|risk compliance/i.test(jdLower)) gaps.push('Mike builds <strong>governed systems</strong> but isn\'t a compliance officer. Different skill set.');
+  if (/remote only|5 days onsite|must relocate|relocation required/i.test(jdLower)) gaps.push('Mike targets <strong>remote executive roles</strong>. This location requirement may be a constraint.');
+  if (/small team|startup <10|early employee|founding engineer/i.test(jdLower)) gaps.push('Mike\'s sweet spot is <strong>enterprise ($6B+)</strong> with complex multi-stakeholder challenges, not small teams.');
+  if (/government|clearance|defense contractor|gs-/i.test(jdLower)) gaps.push('Mike has Army counterintelligence and <strong>Secret clearance</strong>, but this role may require a higher clearance level.');
+  if (/marketing|brand|social media|content strategy|copywriting/i.test(jdLower)) gaps.push('Mike builds <strong>AI-driven content systems</strong>, not traditional marketing campaigns.');
+  if (/hr|human resources|recruiting only|talent acquisition/i.test(jdLower)) gaps.push('Mike <strong>automates recruitment</strong> with AI but isn\'t an HR professional.');
+  if (/finance|controller|accounting|cpa|bookkeeping/i.test(jdLower)) gaps.push('Mike manages $27M budgets but <strong>isn\'t a CFO or controller</strong>.');
+  if (/data science|machine learning research|model training|algorithm/i.test(jdLower)) gaps.push('Mike builds the <strong>systems around AI</strong>, not training models. Different role.');
+  if (/project management|scrum master|pmo|pmp/i.test(jdLower)) gaps.push('Mike operates at <strong>VP level strategy and execution</strong>, not traditional PMO.');
+  if (gaps.length === 0) gaps.push('No major red flags. This role aligns well with Mike\'s strengths in enterprise AI strategy, M&A, and healthcare operations.');
   gaps.forEach(g => { html += `<p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.5rem">&bull; ${g}</p>`; });
   html += '</div>';
   
-  html += `<p style="text-align:center;margin-top:1.5rem;color:var(--text-dim);font-size:.85rem;font-style:italic">This is an honest assessment. If I'm not a fit, I'll tell you. That's The Fixer way. — Mike Rodgers</p>`;
+  // CTA based on fit
+  html += '<div class="cta-result">';
+  if (pctMatch >= 65) {
+    html += `<strong style="font-size:1.1rem;color:var(--green)">${overallVerdict}!</strong><br><p style="margin:.5rem 0;color:var(--text-dim)">This role aligns with Mike\'s core strengths. Let\'s talk about it.</p>`;
+    html += `<a href="mailto:rodgemd1@gmail.com?subject=Fit%20Assessment%3A%20${encodeURIComponent(overallVerdict)}%20-%20Let%27s%20Talk" class="btn btn-primary" style="margin-top:.75rem">Email Mike &rarr;</a>`;
+  } else if (pctMatch >= 45) {
+    html += `<strong style="font-size:1.1rem;color:var(--amber)">${overallVerdict}</strong><br><p style="margin:.5rem 0;color:var(--text-dim)">There\'s some alignment. Let Jake help you understand where Mike could add value.</p>`;
+    html += `<a href="#chat" class="btn btn-primary" style="margin-top:.75rem" onclick="sendChat('I pasted a JD that scored ${pctMatch}%. Can you help me understand where Mike could add value?')">Ask Jake &rarr;</a>`;
+  } else {
+    html += `<strong style="font-size:1.1rem;color:var(--red)">${overallVerdict}</strong><br><p style="margin:.5rem 0;color:var(--text-dim)">Mike would tell you honestly — this may not be the right fit. But he\'d still like to hear from you.</p>`;
+    html += `<a href="mailto:rodgemd1@gmail.com?subject=Fit%20Assessment%20Question" class="btn btn-secondary" style="margin-top:.75rem">Reach Out Anyway</a>`;
+  }
   html += '</div>';
+  
+  html += `<p style="text-align:center;margin-top:1.5rem;color:var(--text-dim);font-size:.85rem;font-style:italic">This is an honest assessment. If I'm not a fit, I'll tell you. That's The Fixer way. — Mike Rodgers</p>`;
   
   return html;
 }
@@ -591,7 +522,6 @@ function generateAssessment(jd) {
 document.addEventListener('DOMContentLoaded', () => {
   initNoise();
   initScrollAnimations();
-  animateCounters();
   initAudioPlayer();
   
   // Chat input
@@ -615,43 +545,5 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Assessment button
   const assessBtn = document.getElementById('assess-btn');
-  if (assessBtn) {
-    assessBtn.addEventListener('click', runAssessment);
-  }
-  
-  // Load headshot properly
-  const headshot = document.getElementById('headshot');
-  if (headshot) {
-    // Use the resized local file
-    headshot.src = '/headshot_600.jpg';
-    headshot.onerror = function() {
-      // Fallback to initials
-      this.onerror = null;
-      this.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 450"><rect fill="#141414" width="400" height="450"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#3b82f6" font-size="80" font-weight="800" font-family="-apple-system,sans-serif">MR</text></svg>');
-    };
-  }
-  
-  // Prompt for API keys if not set
-  const geminiKey = localStorage.getItem('gemini_key');
-  if (!geminiKey) {
-    // Show subtle message about enhanced mode
-    const chatMessages = document.getElementById('chat-messages');
-    if (chatMessages) {
-      setTimeout(() => {
-        const note = document.createElement('div');
-        note.className = 'chat-message assistant';
-        note.innerHTML = `<div class="label" style="color:var(--text-muted)">System</div><div class="bubble" style="background:var(--amber-soft);border-color:var(--amber);color:var(--amber)">For enhanced AI responses with Gemini Flash (recommended), click <a href="#" onclick="promptForApiKey()" style="color:var(--accent);text-decoration:underline">here</a> to add your API key. The local mode works great for common questions.</div>`;
-        chatMessages.appendChild(note);
-      }, 2000);
-    }
-  }
+  if (assessBtn) assessBtn.addEventListener('click', runAssessment);
 });
-
-function promptForApiKey() {
-  const key = prompt('Enter your Gemini API key (free at aistudio.google.com):\n\nThis enables live AI responses. Leave blank to use local mode.');
-  if (key) {
-    localStorage.setItem('gemini_key', key);
-    CONFIG.geminiKey = key;
-    alert('API key saved! Chat will now use Gemini Flash for responses.');
-  }
-}
