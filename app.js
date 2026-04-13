@@ -5,8 +5,11 @@
 
 // ─── CONFIG ────────────────────────────────────────────
 const CONFIG = {
-  GEMINI_KEY: 'AIzaSyBMgFrVzhoS6E7sB5RJuj2K_F-B76qpxeg',
-  GEMINI_MODEL: 'gemini-2.0-flash',
+  GEMINI_KEY: '', // Deprecated - Gemini key blocked
+  GEMINI_MODEL: 'google/gemini-2.0-flash-001',
+  OR_KEY: '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', // OpenRouter key
+  OR_URL: 'https://openrouter.ai/api/v1/chat/completions',
+  OR_MODEL: 'deepseek/deepseek-r1-0528', // Deep reasoning for hiring conversations
   LOCAL_MODEL: 'glm-5.1:cloud',
   OLLAMA_URL: 'http://localhost:11434/api/chat',
   NOISE_FPS: 12
@@ -161,7 +164,15 @@ const MIKE = {
 
 // ─── CONVERSATION CONTEXT BUILDER ─────────────────────
 function buildSystemPrompt() {
-  let ctx = `You are Jake — Mike Rodgers' AI co-founder, built into his Startup Intelligence OS. You speak directly and honestly. You represent Mike but never sugarcoat. If a role doesn't fit, say so. If there's a gap, acknowledge it.
+  let ctx = `You are Jake — Mike Rodgers' AI co-founder, built into his Startup Intelligence OS. You speak directly and honestly, like a real person talking. You represent Mike but never sugarcoat. If a role doesn't fit, say so. If there's a gap, acknowledge it.
+
+STYLE RULES:
+- Write like you're talking to someone across a table. Short sentences. Natural flow.
+- Use bold sparingly — only for the most important point. Not every sentence.
+- Never use asterisks as bullet points. Use numbered lists if you need structure.
+- Never say "As an AI" or "I don't have personal opinions." Just answer directly.
+- Keep responses under 4 sentences unless the question requires detail.
+- Be warm but professional. Confident but not arrogant.
 
 MIKE'S FULL PROFILE:
 - Name: Mike Rodgers | "The Fixer"
@@ -251,12 +262,34 @@ function addMessage(role, text) {
   const container = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.className = `chat-message ${role}`;
-  div.innerHTML = `<div class="label">${role === 'assistant' ? 'Jake (AI Co-Founder)' : 'You'}</div><div class="bubble">${escapeHTML(text)}</div>`;
+  div.innerHTML = `<div class="label">${role === 'assistant' ? 'Jake' : 'You'}</div><div class="bubble">${renderMarkdown(text)}</div>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
 
-function escapeHTML(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+function renderMarkdown(str) {
+  // Escape HTML first
+  let s = str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Convert markdown to HTML
+  // Bold: **text** or __text__
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  // Italic: *text* or _text_ (but not inside strong tags)
+  s = s.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  s = s.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>');
+  // Numbered lists: 1. text
+  s = s.replace(/^(\d+)\.\s+(.+)$/gm, '<div class="chat-list-item"><span class="chat-list-num">$1.</span> $2</div>');
+  // Bullet lists: - text or * text
+  s = s.replace(/^[-*]\s+(.+)$/gm, '<div class="chat-list-item chat-bullet"> $1</div>');
+  // Line breaks
+  s = s.replace(/\n\n/g, '</p><p>');
+  s = s.replace(/\n/g, '<br>');
+  // Wrap in paragraph
+  s = '<p>' + s + '</p>';
+  // Clean empty paragraphs
+  s = s.replace(/<p><\/p>/g, '');
+  return s;
+}
 
 async function sendChat(input) {
   const msg = typeof input === 'string' ? input : '';
@@ -282,14 +315,21 @@ async function sendChat(input) {
 }
 
 async function callGemini(msg) {
-  const messages = [{ role: 'user', parts: [{ text: systemPrompt + '\n\nConversation:\n' + chatHistory.map(m => `${m.role}: ${m.content}`).join('\n') + `\nuser: ${msg}\nassistant:` }] }];
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL}:generateContent?key=${CONFIG.GEMINI_KEY}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: messages, generationConfig: { temperature: 0.7, maxOutputTokens: 800 } })
+  // OpenRouter API call (Gemini key is blocked)
+  const messages = [{ role: 'system', content: systemPrompt }, ...chatHistory, { role: 'user', content: msg }];
+  const r = await fetch(CONFIG.OR_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + CONFIG.OR_KEY,
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'Mike Rodgers — The Fixer'
+    },
+    body: JSON.stringify({ model: CONFIG.OR_MODEL, messages, max_tokens: 800, temperature: 0.7 })
   });
-  if (!r.ok) throw new Error('Gemini failed');
+  if (!r.ok) throw new Error('OpenRouter failed: ' + r.status);
   const data = await r.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
+  return data.choices?.[0]?.message?.content || 'No response.';
 }
 
 async function callLocal(msg) {
@@ -684,6 +724,41 @@ function initMiroFishTracking() {
   });
 }
 
+// ─── CONTACT FORM (Formspree) ───
+function initContactForm() {
+  const form = document.getElementById('contact-form');
+  if (!form) return;
+  const status = document.getElementById('form-status');
+  const submitBtn = document.getElementById('form-submit');
+  
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (submitBtn) submitBtn.disabled = true;
+    if (submitBtn) submitBtn.textContent = 'SENDING...';
+    if (status) status.textContent = '';
+    
+    try {
+      const response = await fetch('https://formspree.io/f/xrergywn', {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (response.ok) {
+        if (status) { status.textContent = 'Message sent. I\'ll be in touch within 24 hours.'; status.className = 'form-status success'; }
+        form.reset();
+      } else {
+        const data = await response.json();
+        if (status) { status.textContent = data.errors ? data.errors.map(e => e.message).join(', ') : 'Something went wrong. Please try again.'; status.className = 'form-status error'; }
+      }
+    } catch (err) {
+      if (status) { status.textContent = 'Network error. Please try again or email mike@rodgersintelligence.com directly.'; status.className = 'form-status error'; }
+    }
+    
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'SEND'; }
+  });
+}
+
 // ─── INITIALIZATION ────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initNoise();
@@ -693,6 +768,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initMiroFishTracking();
   initProgressBar();
   initTypewriter();
+  initStickyCta();
+  initConfidenceGate();
+  initContactForm();
   
   const chatInput = document.getElementById('chat-input');
   const chatSend = document.getElementById('chat-send');
@@ -701,3 +779,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const assessBtn = document.getElementById('assess-btn');
   if (assessBtn) assessBtn.addEventListener('click', runAssessment);
 });
+
+// ─── STICKY FLOATING CTA ───
+function initStickyCta() {
+  const stickyEl = document.getElementById('sticky-cta');
+  if (!stickyEl) return;
+  const heroSection = document.getElementById('hero');
+  if (!heroSection) return;
+  
+  let visible = false;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting && !visible) {
+        stickyEl.classList.remove('hidden');
+        visible = true;
+      } else if (entry.isIntersecting && visible) {
+        stickyEl.classList.add('hidden');
+        visible = false;
+      }
+    });
+  }, { threshold: 0 });
+  
+  observer.observe(heroSection);
+}
+
+// ─── CONFIDENCE GATE (REMOVED — replaced with Decision Engine in HTML) ───
+function initConfidenceGate() { return; }
